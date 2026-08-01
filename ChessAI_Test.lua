@@ -31,12 +31,12 @@ if Board.E2 == "白兵" then
 	
 	table.insert(Moves, {
 		move = "E2 -> E3",
-		score = 10
+		score = 10+1
 	})
 
 	table.insert(Moves, {
 		move = "E2 -> E4",
-		score = 30
+		score = 30+3
 	})
 
 end
