@@ -1,17 +1,6 @@
 print("========================")
-print(" 国际象棋 AI 启动 ")
+print(" 国际象棋 AI 引擎 ")
 print("========================")
-
-
-local Config = {
-	Level = 5,
-	Mode = "平衡"
-}
-
-
-print("AI等级:", Config.Level)
-print("模式:", Config.Mode)
-
 
 
 local Board = {
@@ -28,16 +17,28 @@ local Board = {
 
 
 
+print("棋盘读取完成")
+
+
 print("")
-print("棋盘读取:")
+print("生成走法...")
 
 
-for position, piece in pairs(Board) do
+local Moves = {}
+
+
+-- 白兵走法测试
+
+if Board.E2 == "白兵" then
 	
-	print(
-		piece,
-		"位置:",
-		position
+	table.insert(
+		Moves,
+		"E2 -> E3"
+	)
+
+	table.insert(
+		Moves,
+		"E2 -> E4"
 	)
 
 end
@@ -45,14 +46,34 @@ end
 
 
 print("")
-print("AI分析中...")
-
-wait(1)
+print("可用走法:")
 
 
-print("最佳走法:")
-print("E2 -> E4")
+for i,move in ipairs(Moves) do
+	
+	print(
+		i,
+		move
+	)
+
+end
+
 
 
 print("")
-print("系统运行完成")
+print("AI评估中...")
+
+
+local BestMove = Moves[2]
+
+
+print("")
+print("最佳走法:")
+print(BestMove)
+
+
+
+print("")
+print("========================")
+print("引擎运行完成")
+print("========================")
