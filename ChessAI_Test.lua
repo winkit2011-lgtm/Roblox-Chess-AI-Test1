@@ -30,13 +30,13 @@ local Moves = {}
 if Board.E2 == "白兵" then
 	
 	table.insert(Moves, {
-		move = "E2 -> E3",
-		score = 10+1
+		score = EvaluateMove("E2 -> E3")
+		score = 10+PieceValue["白兵"]
 	})
 
 	table.insert(Moves, {
-		move = "E2 -> E4",
-		score = 30+3
+		score = EvaluateMove("E2 -> E4")
+		score = 30+PieceValue["黑兵"]
 	})
 
 end
