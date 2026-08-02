@@ -3,20 +3,41 @@ print(" 国际象棋 AI 引擎 ")
 print("========================")
 
 
+------------------------------------------------
+-- AI设置
+------------------------------------------------
+
+-- 改这里：
+-- "白方" 或 "黑方"
+
 local AIColor="白方"
 
 
+
+local EnemyColor
+
+if AIColor=="白方" then
+	EnemyColor="黑方"
+else
+	EnemyColor="白方"
+end
+
+
+
+------------------------------------------------
+-- 棋子价值
+------------------------------------------------
 
 local PieceValue={
 
 	["白兵"]=100,
 	["黑兵"]=100,
 
-	["白马"]=300,
-	["黑马"]=300,
+	["白马"]=320,
+	["黑马"]=320,
 
-	["白象"]=300,
-	["黑象"]=300,
+	["白象"]=330,
+	["黑象"]=330,
 
 	["白车"]=500,
 	["黑车"]=500,
@@ -31,88 +52,398 @@ local PieceValue={
 
 
 
+------------------------------------------------
+-- 初始棋盘
+------------------------------------------------
+
 local Board={
 
-	E1="白王",
-	D1="白后",
-	E2="白兵",
+
+	-- 白方
+
+	A1="白车",
 	B1="白马",
 	C1="白象",
-	A1="白车",
+	D1="白后",
+	E1="白王",
 
-	E8="黑王",
-	D8="黑后",
-	E7="黑兵",
-	G8="黑马",
+	A2="白兵",
+	B2="白兵",
+	C2="白兵",
+	D2="白兵",
+	E2="白兵",
+
+
+
+	-- 黑方
+
+	A8="黑车",
+	B8="黑马",
 	C8="黑象",
-	A8="黑车"
+	D8="黑后",
+	E8="黑王",
+
+	A7="黑兵",
+	B7="黑兵",
+	C7="黑兵",
+	D7="黑兵",
+	E7="黑兵"
+
 
 }
 
 
 
-local Moves={}
+------------------------------------------------
+-- 基础判断
+------------------------------------------------
+
+
+local function GetColor(piece)
+
+	if piece==nil then
+		return nil
+	end
+
+
+	return piece:sub(1,3)
+
+end
+
+
+
+local function IsAI(piece)
+
+	return GetColor(piece)==AIColor
+
+end
+
+
+
+local function IsEnemy(piece)
+
+	return GetColor(piece)==EnemyColor
+
+end
+
+
+
+------------------------------------------------
+-- 复制棋盘
+------------------------------------------------
+
+
+local function CopyBoard()
+
+	local copy={}
+
+
+	for pos,piece in pairs(Board) do
+
+		copy[pos]=piece
+
+	end
+
+
+	return copy
+
+end
+
+
+
+------------------------------------------------
+-- 移动棋子
+------------------------------------------------
+
 
 local function MakeMove(from,to)
 
 	local piece=Board[from]
 
-	if piece~=nil then
 
-		Board[from]=nil
+	if piece then
 
 		Board[to]=piece
 
+		Board[from]=nil
+
 	end
 
-end
-
-
-local function GetPieceAt(position)
-
-	return Board[position]
 
 end
 
 
 
-local function AddMove(move,score)
+------------------------------------------------
+-- 恢复棋盘
+------------------------------------------------
 
-	table.insert(Moves,{
-		move=move,
-		score=score
-	})
+
+local function RestoreBoard(old)
+
+
+	for k in pairs(Board) do
+
+		Board[k]=nil
+
+	end
+
+
+
+	for k,v in pairs(old) do
+
+		Board[k]=v
+
+	end
+
 
 end
 
 
 
-local function LineMove(pos,dirs)
+------------------------------------------------
+-- 文件第1部分结束
+------------------------------------------------
+------------------------------------------------
+-- 移动合法检查
+------------------------------------------------
+
+local function CanMove(piece,to)
+
+
+	local target=Board[to]
+
+
+	-- 空格可以走
+
+	if target==nil then
+
+		return true
+
+	end
+
+
+
+	-- 不能吃自己的棋
+
+	if GetColor(target)==GetColor(piece) then
+
+		return false
+
+	end
+
+
+
+	-- 可以吃敌棋
+
+	return true
+
+end
+
+
+
+------------------------------------------------
+-- 添加走法
+------------------------------------------------
+
+
+local function AddMove(list,from,to)
+
+
+	local piece=Board[from]
+
+
+	if piece==nil then
+		return
+	end
+
+
+
+	if CanMove(piece,to) then
+
+
+		table.insert(
+			list,
+			{
+				from=from,
+				to=to
+			}
+		)
+
+
+	end
+
+
+end
+
+
+
+------------------------------------------------
+-- 直线移动
+-- 车、象、后
+------------------------------------------------
+
+
+local function LineMove(pos,directions)
+
 
 	local result={}
 
-	local f=string.byte(string.sub(pos,1,1))
-	local r=tonumber(string.sub(pos,2,2))
+
+	local file=string.byte(pos:sub(1,1))
+	local rank=tonumber(pos:sub(2,2))
 
 
-	for _,d in ipairs(dirs) do
 
-		local nf=f+d[1]
-		local nr=r+d[2]
+	for _,d in ipairs(directions) do
 
 
-		while nf>=65 and nf<=72
-		and nr>=1 and nr<=8 do
+		local f=file+d[1]
+		local r=rank+d[2]
+
+
+
+		while f>=65 and f<=72
+		and r>=1 and r<=8 do
 
 
 			table.insert(
 				result,
-				string.char(nf)..nr
+				string.char(f)..r
 			)
 
 
-			nf=nf+d[1]
-			nr=nr+d[2]
+			f=f+d[1]
+			r=r+d[2]
+
+
+		end
+
+
+	end
+
+
+	return result
+
+end
+
+
+
+------------------------------------------------
+-- 车
+------------------------------------------------
+
+
+local function RookMove(pos)
+
+	return LineMove(
+		pos,
+		{
+			{1,0},
+			{-1,0},
+			{0,1},
+			{0,-1}
+		}
+	)
+
+end
+
+
+
+------------------------------------------------
+-- 象
+------------------------------------------------
+
+
+local function BishopMove(pos)
+
+	return LineMove(
+		pos,
+		{
+			{1,1},
+			{1,-1},
+			{-1,1},
+			{-1,-1}
+		}
+	)
+
+end
+
+
+
+------------------------------------------------
+-- 后
+------------------------------------------------
+
+
+local function QueenMove(pos)
+
+
+	return LineMove(
+		pos,
+		{
+
+			{1,0},
+			{-1,0},
+			{0,1},
+			{0,-1},
+
+			{1,1},
+			{1,-1},
+			{-1,1},
+			{-1,-1}
+
+		}
+	)
+
+end
+
+
+
+------------------------------------------------
+-- 王
+------------------------------------------------
+
+
+local function KingMove(pos)
+
+
+	local result={}
+
+
+	local f=string.byte(pos:sub(1,1))
+	local r=tonumber(pos:sub(2,2))
+
+
+
+	for x=-1,1 do
+
+		for y=-1,1 do
+
+
+			if x~=0 or y~=0 then
+
+
+				local nf=f+x
+				local nr=r+y
+
+
+
+				if nf>=65 and nf<=72
+				and nr>=1 and nr<=8 then
+
+
+					table.insert(
+						result,
+						string.char(nf)..nr
+					)
+
+
+				end
+
+
+			end
+
 
 		end
 
@@ -125,84 +456,44 @@ end
 
 
 
-local function RookMove(pos)
-
-	return LineMove(pos,{
-		{1,0},
-		{-1,0},
-		{0,1},
-		{0,-1}
-	})
-
-end
+------------------------------------------------
+-- 马
+------------------------------------------------
 
 
+local function KnightMove(pos)
 
-local function BishopMove(pos)
-
-	return LineMove(pos,{
-		{1,1},
-		{1,-1},
-		{-1,1},
-		{-1,-1}
-	})
-
-end
-
-
-
-local function QueenMove(pos)
 
 	local result={}
 
 
-	for _,m in ipairs(RookMove(pos)) do
-
-		table.insert(result,m)
-
-	end
-
-
-	for _,m in ipairs(BishopMove(pos)) do
-
-		table.insert(result,m)
-
-	end
-
-
-	return result
-
-end
+	local f=string.byte(pos:sub(1,1))
+	local r=tonumber(pos:sub(2,2))
 
 
 
-local function KingMove(pos)
+	local steps={
 
-	local result={}
+		{1,2},
+		{2,1},
+		{2,-1},
+		{1,-2},
 
-	local f=string.byte(string.sub(pos,1,1))
-	local r=tonumber(string.sub(pos,2,2))
-
-
-	local dirs={
-
-		{1,0},
-		{-1,0},
-		{0,1},
-		{0,-1},
-
-		{1,1},
-		{1,-1},
-		{-1,1},
-		{-1,-1}
+		{-1,-2},
+		{-2,-1},
+		{-2,1},
+		{-1,2}
 
 	}
 
 
-	for _,d in ipairs(dirs) do
 
-		local nf=f+d[1]
-		local nr=r+d[2]
+	for _,s in ipairs(steps) do
+
+
+		local nf=f+s[1]
+		local nr=r+s[2]
+
 
 
 		if nf>=65 and nf<=72
@@ -214,7 +505,9 @@ local function KingMove(pos)
 				string.char(nf)..nr
 			)
 
+
 		end
+
 
 	end
 
@@ -225,19 +518,194 @@ end
 
 
 
-local function ScoreMove(piece,target)
-
-	local score=PieceValue[piece]
-
-
-	local capture=GetPieceAt(target)
+------------------------------------------------
+-- 兵
+------------------------------------------------
 
 
-	if capture~=nil then
+local function PawnMove(pos,piece)
 
-		score=score+PieceValue[capture]
+
+	local result={}
+
+
+	local file=pos:sub(1,1)
+	local rank=tonumber(pos:sub(2,2))
+
+
+	local direction=1
+
+
+	if GetColor(piece)=="黑方" then
+
+		direction=-1
 
 	end
+
+
+
+	local newRank=rank+direction
+
+
+
+	if newRank>=1 and newRank<=8 then
+
+
+		table.insert(
+			result,
+			file..newRank
+		)
+
+
+	end
+
+
+	return result
+
+end
+------------------------------------------------
+-- 生成所有AI走法
+------------------------------------------------
+
+local function GenerateMoves(color)
+
+
+	local moves={}
+
+
+
+	for pos,piece in pairs(Board) do
+
+
+
+		if GetColor(piece)==color then
+
+
+
+			local targets={}
+
+
+
+			if piece:find("车") then
+
+				targets=RookMove(pos)
+
+
+			elseif piece:find("象") then
+
+				targets=BishopMove(pos)
+
+
+			elseif piece:find("后") then
+
+				targets=QueenMove(pos)
+
+
+			elseif piece:find("王") then
+
+				targets=KingMove(pos)
+
+
+			elseif piece:find("马") then
+
+				targets=KnightMove(pos)
+
+
+			elseif piece:find("兵") then
+
+				targets=PawnMove(pos,piece)
+
+
+			end
+
+
+
+			for _,to in ipairs(targets) do
+
+
+				AddMove(
+					moves,
+					pos,
+					to
+				)
+
+
+			end
+
+
+		end
+
+
+	end
+
+
+
+	return moves
+
+end
+
+
+
+------------------------------------------------
+-- 模拟移动
+------------------------------------------------
+
+local function SimulateMove(move)
+
+
+	local old=CopyBoard()
+
+
+
+	MakeMove(
+		move.from,
+		move.to
+	)
+
+
+
+	return old
+
+end
+
+
+
+------------------------------------------------
+-- 局面评分
+------------------------------------------------
+
+local function EvaluateBoard()
+
+
+	local score=0
+
+
+
+	for _,piece in pairs(Board) do
+
+
+
+		local value=PieceValue[piece]
+
+
+
+		if GetColor(piece)==AIColor then
+
+
+			score=score+value
+
+
+		else
+
+
+			score=score-value
+
+
+		end
+
+
+	end
+
 
 
 	return score
@@ -246,118 +714,318 @@ end
 
 
 
-local function IsMyPiece(piece)
+------------------------------------------------
+-- Alpha-Beta搜索
+------------------------------------------------
 
-	if AIColor=="白方" then
+local function AlphaBeta(depth,color,alpha,beta)
 
-		return string.sub(piece,1,3)=="白"
+
+	if depth==0 then
+
+		return EvaluateBoard()
+
+	end
+
+
+
+	local moves=GenerateMoves(color)
+
+
+
+	if #moves==0 then
+
+		return EvaluateBoard()
+
+	end
+
+
+
+	local maximizing
+
+
+
+	if color==AIColor then
+
+		maximizing=true
 
 	else
 
-		return string.sub(piece,1,3)=="黑"
+		maximizing=false
 
 	end
 
-end
+
+
+	if maximizing then
 
 
 
-print("AI颜色:")
-print(AIColor)
-
-print("")
-print("棋盘读取完成")
-
-
-print("")
-print("生成走法...")
+		local value=-999999
 
 
 
-for pos,piece in pairs(Board) do
-
-
-	if IsMyPiece(piece) then
-
-
-		local targets={}
-
-
-		if string.find(piece,"后") then
-
-			targets=QueenMove(pos)
-
-
-		elseif string.find(piece,"车") then
-
-			targets=RookMove(pos)
-
-
-		elseif string.find(piece,"象") then
-
-			targets=BishopMove(pos)
-
-
-		elseif string.find(piece,"王") then
-
-			targets=KingMove(pos)
-
-
-		end
+		for _,move in ipairs(moves) do
 
 
 
-		for _,t in ipairs(targets) do
+			local old=SimulateMove(move)
 
-			AddMove(
-				pos.." -> "..t,
-				ScoreMove(piece,t)
+
+
+			local score=AlphaBeta(
+				depth-1,
+				EnemyColor,
+				alpha,
+				beta
 			)
 
+
+
+			RestoreBoard(old)
+
+
+
+			if score>value then
+
+				value=score
+
+			end
+
+
+
+			if value>alpha then
+
+				alpha=value
+
+			end
+
+
+
+			if alpha>=beta then
+
+				break
+
+			end
+
+
+		end
+
+
+
+		return value
+
+
+
+	else
+
+
+
+		local value=999999
+
+
+
+		for _,move in ipairs(moves) do
+
+
+
+			local old=SimulateMove(move)
+
+
+
+			local score=AlphaBeta(
+				depth-1,
+				AIColor,
+				alpha,
+				beta
+			)
+
+
+
+			RestoreBoard(old)
+
+
+
+			if score<value then
+
+				value=score
+
+			end
+
+
+
+			if value<beta then
+
+				beta=value
+
+			end
+
+
+
+			if alpha>=beta then
+
+				break
+
+			end
+
+
+		end
+
+
+
+		return value
+
+
+	end
+
+
+end
+------------------------------------------------
+-- 寻找最佳走法
+------------------------------------------------
+
+local function FindBestMove()
+
+
+	local moves=GenerateMoves(AIColor)
+
+
+
+	local bestMove=nil
+
+	local bestScore=-999999
+
+
+
+	print("")
+	print("AI正在计算...")
+	print("候选数量:",#moves)
+
+
+
+	for _,move in ipairs(moves) do
+
+
+
+		local old=SimulateMove(move)
+
+
+
+		local score=AlphaBeta(
+			2,
+			EnemyColor,
+			-999999,
+			999999
+		)
+
+
+
+		RestoreBoard(old)
+
+
+
+		print(
+			"测试:",
+			move.from.." -> "..move.to,
+			"评分:",
+			score
+		)
+
+
+
+		if score>bestScore then
+
+
+			bestScore=score
+
+			bestMove=move
+
+
 		end
 
 
 	end
 
 
+
+	return bestMove,bestScore
+
 end
 
 
 
-print("")
-print("AI候选走法:")
+------------------------------------------------
+-- 执行AI移动
+------------------------------------------------
+
+local function ExecuteAIMove()
+
+
+	local move,score=FindBestMove()
 
 
 
-for i,data in ipairs(Moves) do
+	if move==nil then
 
+
+		print("没有可用走法")
+
+		return
+
+
+	end
+
+
+
+	print("")
+	print("========================")
+	print("AI选择:")
 	print(
-		i,
-		data.move,
-		"评分:",
-		data.score
+		move.from..
+		" -> "..
+		move.to
 	)
 
+	print(
+		"评分:",
+		score
+	)
+
+	print("========================")
+
+
+
+	MakeMove(
+		move.from,
+		move.to
+	)
+
+
+
 end
 
 
 
-print("")
-print("AI计算中...")
+------------------------------------------------
+-- 显示棋盘
+------------------------------------------------
+
+local function PrintBoard()
 
 
-local BestMove=""
-local BestScore=-1
+	print("")
+	print("当前棋盘:")
 
 
 
-for _,data in ipairs(Moves) do
+	for pos,piece in pairs(Board) do
 
 
-	if data.score>BestScore then
+		print(
+			pos,
+			piece
+		)
 
-		BestScore=data.score
-		BestMove=data.move
 
 	end
 
@@ -366,45 +1034,30 @@ end
 
 
 
-print("")
-print("最佳走法:")
-print(BestMove)
-
-print("最终评分:")
-print(BestScore)
-print("")
-
-local from=string.sub(BestMove,1,2)
-local to=string.sub(BestMove,7,8)
-
-
-print("执行走法:")
-print(from.." -> "..to)
-
-
-
-MakeMove(
-	from,
-	to
-)
-
+------------------------------------------------
+-- 启动AI
+------------------------------------------------
 
 
 print("")
-print("更新后的棋盘:")
+print("AI阵营:")
+print(AIColor)
 
 
-for pos,piece in pairs(Board) do
 
-	print(
-		pos,
-		piece
-	)
+PrintBoard()
 
-end
+
+
+ExecuteAIMove()
+
+
+
+PrintBoard()
+
 
 
 print("")
 print("========================")
-print("引擎运行完成")
+print(" AI运行完成 ")
 print("========================")
