@@ -3,6 +3,12 @@ print(" 国际象棋 AI 引擎 ")
 print("========================")
 
 
+local AIColor = "白方"
+-- 改这里:
+-- "白方" 或 "黑方"
+
+
+
 local PieceValue = {
 
 	["白兵"]=100,
@@ -34,8 +40,6 @@ local Board = {
 
 local Moves = {}
 
-local BlackMoves = {}
-
 
 
 local function AddMove(move,score)
@@ -49,63 +53,23 @@ end
 
 
 
-print("棋盘读取完成")
+print("AI颜色:")
+print(AIColor)
 
 print("")
-print("生成白方走法...")
-
-
-AddMove(
-	"E2 -> E4",
-	30
-)
+print("棋盘读取完成")
 
 
 
-if Board.D8=="黑后" then
+local function IsMyPiece(piece)
 
-	AddMove(
-		"D1 吃 D8 黑后",
-	30 + PieceValue["黑后"]
-	)
+	if AIColor=="白方" then
+		
+		return string.sub(piece,1,3)=="白"
 
-end
-
-
-
-if Board.E7=="黑兵" then
-
-	AddMove(
-		"E2 吃 E7 黑兵",
-	30 + PieceValue["黑兵"]
-	)
-
-end
-
-
-
-local function GenerateBlackMoves()
-
-	BlackMoves={}
-
-
-	if Board.E7=="黑兵" then
-
-		table.insert(BlackMoves,{
-			move="E7 -> E6",
-			score=100
-		})
-
-	end
-
-
-
-	if Board.D8=="黑后" then
-
-		table.insert(BlackMoves,{
-			move="黑后移动",
-			score=900
-		})
+	else
+		
+		return string.sub(piece,1,3)=="黑"
 
 	end
 
@@ -113,30 +77,52 @@ end
 
 
 
-local function Minimax(score)
+print("")
+print("生成走法...")
 
-	local enemyBestReply=0
+
+for pos,piece in pairs(Board) do
 
 
-	for _,enemy in ipairs(BlackMoves) do
+	if IsMyPiece(piece) then
 
-		if enemy.score > enemyBestReply then
 
-			enemyBestReply=enemy.score
+		if string.find(piece,"兵") then
+
+			AddMove(
+				pos.." -> 兵移动",
+				PieceValue[piece]
+			)
+
+
+		elseif string.find(piece,"后") then
+
+			AddMove(
+				pos.." -> 后移动",
+				PieceValue[piece]
+			)
+
+
+		elseif string.find(piece,"王") then
+
+			AddMove(
+				pos.." -> 王移动",
+				PieceValue[piece]
+			)
 
 		end
 
+
 	end
 
-
-	return score-enemyBestReply
 
 end
 
 
 
 print("")
-print("白方可用走法:")
+print("AI候选走法:")
+
 
 
 for i,data in ipairs(Moves) do
@@ -153,52 +139,19 @@ end
 
 
 print("")
-print("生成黑方回应...")
-
-
-GenerateBlackMoves()
-
-
-
-for i,data in ipairs(BlackMoves) do
-
-	print(
-		"黑方:",
-		data.move,
-		"评分:",
-		data.score
-	)
-
-end
-
-
-
-print("")
 print("AI计算中...")
 
 
 local BestMove=""
-local BestScore=-999
+local BestScore=-1
 
 
 
 for _,data in ipairs(Moves) do
 
+	if data.score>BestScore then
 
-	local finalScore=Minimax(data.score)
-
-
-	print(
-		"分析:",
-		data.move,
-		"结果:",
-		finalScore
-	)
-
-
-	if finalScore>BestScore then
-
-		BestScore=finalScore
+		BestScore=data.score
 		BestMove=data.move
 
 	end
@@ -211,7 +164,7 @@ print("")
 print("最佳走法:")
 print(BestMove)
 
-print("最终评分:")
+print("评分:")
 print(BestScore)
 
 
