@@ -2,78 +2,219 @@ print("========================")
 print(" 国际象棋 AI 引擎 ")
 print("========================")
 
+
 local PieceValue = {
-    ["白兵"] = 100,
-    ["黑兵"] = 100,
-    ["白后"] = 900,
-    ["黑后"] = 900,
-    ["白王"] = 9999,
-    ["黑王"] = 9999
+
+	["白兵"]=100,
+	["黑兵"]=100,
+
+	["白后"]=900,
+	["黑后"]=900,
+
+	["白王"]=9999,
+	["黑王"]=9999
+
 }
+
+
 
 local Board = {
-    E1 = "白王",
-    D1 = "白后",
-    E2 = "白兵",
 
-    E8 = "黑王",
-    D8 = "黑后",
-    E7 = "黑兵"
+	E1="白王",
+	D1="白后",
+	E2="白兵",
+
+	E8="黑王",
+	D8="黑后",
+	E7="黑兵"
+
 }
 
-print("棋盘读取完成")
-print("")
-print("生成走法...")
+
 
 local Moves = {}
 
-if Board.E2 == "白兵" then
+local BlackMoves = {}
 
-    table.insert(Moves,{
-        move = "E2 -> E3",
-        score = 10 + PieceValue["白兵"]
-    })
 
-    table.insert(Moves,{
-        move = "E2 -> E4",
-        score = 30 + PieceValue["黑兵"]
-    })
+
+local function AddMove(move,score)
+
+	table.insert(Moves,{
+		move=move,
+		score=score
+	})
 
 end
 
+
+
+print("棋盘读取完成")
+
 print("")
-print("可用走法:")
+print("生成白方走法...")
+
+
+AddMove(
+	"E2 -> E4",
+	30
+)
+
+
+
+if Board.D8=="黑后" then
+
+	AddMove(
+		"D1 吃 D8 黑后",
+	30 + PieceValue["黑后"]
+	)
+
+end
+
+
+
+if Board.E7=="黑兵" then
+
+	AddMove(
+		"E2 吃 E7 黑兵",
+	30 + PieceValue["黑兵"]
+	)
+
+end
+
+
+
+local function GenerateBlackMoves()
+
+	BlackMoves={}
+
+
+	if Board.E7=="黑兵" then
+
+		table.insert(BlackMoves,{
+			move="E7 -> E6",
+			score=100
+		})
+
+	end
+
+
+
+	if Board.D8=="黑后" then
+
+		table.insert(BlackMoves,{
+			move="黑后移动",
+			score=900
+		})
+
+	end
+
+end
+
+
+
+local function Minimax(score)
+
+	local enemyBestReply=0
+
+
+	for _,enemy in ipairs(BlackMoves) do
+
+		if enemy.score > enemyBestReply then
+
+			enemyBestReply=enemy.score
+
+		end
+
+	end
+
+
+	return score-enemyBestReply
+
+end
+
+
+
+print("")
+print("白方可用走法:")
+
 
 for i,data in ipairs(Moves) do
-    print(i,data.move,"评分:",data.score)
+
+	print(
+		i,
+		data.move,
+		"评分:",
+		data.score
+	)
+
 end
+
+
 
 print("")
-print("AI评估中...")
+print("生成黑方回应...")
 
-local BestMove = ""
-local BestScore = -999
+
+GenerateBlackMoves()
+
+
+
+for i,data in ipairs(BlackMoves) do
+
+	print(
+		"黑方:",
+		data.move,
+		"评分:",
+		data.score
+	)
+
+end
+
+
+
+print("")
+print("AI计算中...")
+
+
+local BestMove=""
+local BestScore=-999
+
+
 
 for _,data in ipairs(Moves) do
-    if data.score > BestScore then
-        BestScore = data.score
-        BestMove = data.move
-    end
+
+
+	local finalScore=Minimax(data.score)
+
+
+	print(
+		"分析:",
+		data.move,
+		"结果:",
+		finalScore
+	)
+
+
+	if finalScore>BestScore then
+
+		BestScore=finalScore
+		BestMove=data.move
+
+	end
+
 end
+
+
 
 print("")
 print("最佳走法:")
 print(BestMove)
 
-print("最高评分:")
+print("最终评分:")
 print(BestScore)
 
-print("")
-print("棋子价值:")
 
-for piece,value in pairs(PieceValue) do
-    print(piece,value)
-end
 
 print("")
 print("========================")
